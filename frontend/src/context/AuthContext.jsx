@@ -1,46 +1,54 @@
 import { useState } from 'react';
 import { AuthContext } from './AuthContextValue';
 
+const USER_STORAGE_KEY = 'userInfo';
+
+const parseResponse = async (response) => {
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    return { success: false, message: data.message || 'Something went wrong' };
+  }
+
+  return { success: true, data };
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem('userInfo');
+    const storedUser = localStorage.getItem(USER_STORAGE_KEY);
     if (!storedUser) return null;
 
     try {
       return JSON.parse(storedUser);
-    } catch (error) {
-      console.error('Unable to restore saved user session', error);
-      localStorage.removeItem('userInfo');
+    } catch {
+      localStorage.removeItem(USER_STORAGE_KEY);
       return null;
     }
   });
 
-  // 🚀 NEW: Register function added here!
-  const register = async (name, email, password) => {
+  const saveUser = (nextUser) => {
+    setUser(nextUser);
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(nextUser));
+  };
+
+  const register = async (name, email, password, role = 'customer') => {
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, role }),
       });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        setUser(data);
-        localStorage.setItem('userInfo', JSON.stringify(data)); // Save token to browser
-        return true; // Registration success
-      } else {
-        alert(data.message || 'Registration failed');
-        return false; // Registration failed
-      }
-    } catch (error) {
-      console.error("Registration error", error);
-      return false;
+
+      const result = await parseResponse(response);
+      if (!result.success) return result;
+
+      saveUser(result.data);
+      return { success: true, message: 'Registration successful' };
+    } catch {
+      return { success: false, message: 'Unable to reach the server. Please try again.' };
     }
   };
 
-  // Existing Login function
   const login = async (email, password) => {
     try {
       const response = await fetch('/api/auth/login', {
@@ -48,32 +56,24 @@ export const AuthProvider = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        setUser(data);
-        localStorage.setItem('userInfo', JSON.stringify(data)); 
-        return true; 
-      } else {
-        alert(data.message || 'Login failed');
-        return false; 
-      }
-    } catch (error) {
-      console.error("Login failed", error);
-      return false;
+
+      const result = await parseResponse(response);
+      if (!result.success) return result;
+
+      saveUser(result.data);
+      return { success: true };
+    } catch {
+      return { success: false, message: 'Unable to reach the server. Please try again.' };
     }
   };
 
-  // Existing Logout function
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('userInfo');
+    localStorage.removeItem(USER_STORAGE_KEY);
   };
 
   return (
-    // 🚀 Added 'register' to the exported values here!
-    <AuthContext.Provider value={{ user, login, logout, register }}>
+    <AuthContext.Provider value={{ user, login, logout, register, loading: false }}>
       {children}
     </AuthContext.Provider>
   );
