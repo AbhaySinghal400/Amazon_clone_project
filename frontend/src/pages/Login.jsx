@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContextValue';
 import { useNavigate, Link } from 'react-router-dom';
+import AmazonLogo from '../components/AmazonLogo';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -18,34 +19,36 @@ const Login = () => {
 
   return (
     <div className="amz-login-wrapper">
-      <Link to="/">
-        <img 
-          className="amz-login-logo" 
-          src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" 
-          alt="Amazon Logo" 
-        />
-      </Link>
+      <div style={{ marginBottom: '1.25rem' }}>
+        <AmazonLogo variant="dark" size="large" />
+      </div>
       
       <div className="amz-login-container">
         <h1>Sign in</h1>
         
         <form onSubmit={submitHandler}>
           <div className="amz-input-group">
-            <label>Email or mobile phone number</label>
+            <label htmlFor="login-email">Email or mobile phone number</label>
             <input 
+              id="login-email"
+              name="email"
               type="email" 
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
+              autoComplete="email"
               required 
             />
           </div>
           
           <div className="amz-input-group">
-            <label>Password</label>
+            <label htmlFor="login-password">Password</label>
             <input 
+              id="login-password"
+              name="password"
               type="password" 
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
+              autoComplete="current-password"
               required 
             />
           </div>

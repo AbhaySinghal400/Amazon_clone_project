@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { useAuth } from './AuthContextValue';
 import { useCart } from './CartContextValue';
-import { WishlistContext } from './WishlistContextValue';
+import { WishlistContext, useWishlist } from './WishlistContextValue';
+
+export { useWishlist, WishlistContext };
 
 export const WishlistProvider = ({ children }) => {
   const [wishlistState, setWishlistState] = useState({ userId: null, wishlist: null });

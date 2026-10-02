@@ -1,18 +1,41 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import api from '../utils/api';
-import { FaBoxOpen, FaRegCalendarAlt, FaCreditCard, FaMoneyBillWave, FaTimes } from 'react-icons/fa';
+import { 
+  FaBoxOpen, 
+  FaRegCalendarAlt, 
+  FaCreditCard, 
+  FaMoneyBillWave, 
+  FaTimes, 
+  FaTruck, 
+  FaCheckCircle, 
+  FaTimesCircle, 
+  FaMapMarkerAlt,
+  FaBox,
+  FaRoute
+} from 'react-icons/fa';
 
 const MyOrders = () => {
   const location = useLocation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState(null);
+  const [trackingOrder, setTrackingOrder] = useState(null);
   const [successMsg, setSuccessMsg] = useState(() => (
     new URLSearchParams(window.location.search).has('success')
       ? 'Your order has been placed successfully! 🎉'
       : ''
   ));
+
+  const getOrderDeliveryDate = (order) => {
+    if (order.estimatedDeliveryDate) {
+      const d = new Date(order.estimatedDeliveryDate);
+      return `${d.toLocaleDateString('en-IN', { weekday: 'long' })}, ${d.getDate()} ${d.toLocaleDateString('en-IN', { month: 'long' })}`;
+    }
+    const created = new Date(order.createdAt || Date.now());
+    created.setDate(created.getDate() + 3);
+    return `${created.toLocaleDateString('en-IN', { weekday: 'long' })}, ${created.getDate()} ${created.toLocaleDateString('en-IN', { month: 'long' })}`;
+  };
 
   const fetchOrders = async () => {
     try {
@@ -112,8 +135,8 @@ const MyOrders = () => {
                   </div>
                   <div>
                     <span className="label">Ship To</span>
-                    <span className="val" title={`${order.shippingAddress.street}, ${order.shippingAddress.city}`}>
-                      {order.shippingAddress.city}, {order.shippingAddress.state}
+                    <span className="val" title={`${order.shippingAddress?.address || ''}, ${order.shippingAddress?.city || ''}`}>
+                      {order.shippingAddress?.fullName || 'Customer'} ({order.shippingAddress?.city || 'India'})
                     </span>
                   </div>
                 </div>
@@ -125,64 +148,281 @@ const MyOrders = () => {
 
               {/* Order Content */}
               <div className="order-card-body">
-                {/* Items details */}
-                <div className="order-items-wrapper">
-                  {order.items.map((item) => {
-                    const product = item.product;
-                    const imageUrl = product.images && product.images.length > 0
-                      ? product.images[0]
-                      : 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&auto=format&fit=crop&q=60';
-
-                    return (
-                      <div key={item._id} className="order-item-row">
-                        <div className="item-image flex-center">
-                          <img src={imageUrl} alt={product.name} />
-                        </div>
-                        <div className="item-info">
-                          <h4>{product.name}</h4>
-                          <span className="brand">Brand: {product.brand}</span>
-                          <span className="quantity">Quantity ordered: {item.quantity}</span>
-                          <span className="price">Price: ₹{item.price.toLocaleString('en-IN')}</span>
-                        </div>
+                {/* Delivery Date & Live Tracking Bar */}
+                <div className="order-delivery-banner" style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-color)', backgroundColor: '#fafafa' }}>
+                  {order.orderStatus?.toLowerCase() === 'cancelled' ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#cc0c39', fontWeight: 700, fontSize: '1.1rem' }}>
+                      <FaTimesCircle /> <span>Order Cancelled</span>
+                    </div>
+                  ) : order.isDelivered || order.orderStatus === 'Delivered' ? (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#007600', fontWeight: 700, fontSize: '1.15rem' }}>
+                        <FaCheckCircle /> <span>Delivered on {getOrderDeliveryDate(order)}</span>
                       </div>
-                    );
-                  })}
+                      <p style={{ margin: '3px 0 0 0', fontSize: '0.85rem', color: '#565959' }}>
+                        Package was delivered directly to your address
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#007600', fontWeight: 700, fontSize: '1.15rem' }}>
+                        <FaTruck /> <span>Arriving by {getOrderDeliveryDate(order)}</span>
+                      </div>
+                      <p style={{ margin: '3px 0 0 0', fontSize: '0.85rem', color: '#565959' }}>
+                        Tracking ID: <strong>{order.trackingNumber || `AMZ-IN-${order._id.slice(-8).toUpperCase()}`}</strong> • Carrier: {order.carrier || 'Amazon Logistics'}
+                      </p>
+                    </div>
+                  )}
+
+                  {order.orderStatus?.toLowerCase() !== 'cancelled' && (
+                    <div className="tracker-timeline-bar" style={{ marginTop: '1.25rem', marginBottom: '0.5rem' }}>
+                      <div style={{ position: 'relative', height: '6px', backgroundColor: '#e7e7e7', borderRadius: '3px', margin: '0 10px' }}>
+                        <div 
+                          style={{ 
+                            position: 'absolute', 
+                            top: 0, 
+                            left: 0, 
+                            height: '100%', 
+                            backgroundColor: '#007600', 
+                            borderRadius: '3px',
+                            transition: 'width 0.4s ease',
+                            width: (order.isDelivered || order.orderStatus === 'Delivered') ? '100%' 
+                              : order.orderStatus === 'Out for Delivery' ? '75%' 
+                              : order.orderStatus === 'Shipped' ? '50%' 
+                              : order.orderStatus === 'Packed' ? '30%' 
+                              : '15%' 
+                          }}
+                        ></div>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '0.78rem', color: '#565959' }}>
+                        <span style={{ fontWeight: 600, color: '#007600' }}>● Ordered</span>
+                        <span style={{ fontWeight: ['Shipped', 'Out for Delivery', 'Delivered'].includes(order.orderStatus) ? 700 : 400, color: ['Shipped', 'Out for Delivery', 'Delivered'].includes(order.orderStatus) ? '#007600' : 'inherit' }}>
+                          ● Shipped
+                        </span>
+                        <span style={{ fontWeight: ['Out for Delivery', 'Delivered'].includes(order.orderStatus) ? 700 : 400, color: ['Out for Delivery', 'Delivered'].includes(order.orderStatus) ? '#007600' : 'inherit' }}>
+                          ● Out for Delivery
+                        </span>
+                        <span style={{ fontWeight: (order.isDelivered || order.orderStatus === 'Delivered') ? 700 : 400, color: (order.isDelivered || order.orderStatus === 'Delivered') ? '#007600' : 'inherit' }}>
+                          ● Delivered
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Logistics status & cancellation side */}
-                <div className="order-logistics-wrapper card">
-                  <div className="status-row flex-center" style={{ justifyContent: 'space-between' }}>
-                    <span>Order Status:</span>
-                    <span className={`badge ${getStatusBadgeClass(order.orderStatus)}`}>{order.orderStatus}</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', padding: '1.5rem' }}>
+                  {/* Items details */}
+                  <div className="order-items-wrapper" style={{ flex: '1 1 500px' }}>
+                    {(order.orderItems || order.items || []).map((item, idx) => {
+                      const itemName = item.name || item.product?.name || 'Amazon Product';
+                      const imageUrl = item.image || (item.product?.images && item.product?.images.length > 0
+                        ? item.product.images[0]
+                        : (item.product?.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&auto=format&fit=crop&q=60'));
+                      const itemQty = item.qty || item.quantity || 1;
+                      const itemPrice = item.price || 0;
+
+                      return (
+                        <div key={item._id || idx} className="order-item-row">
+                          <div className="item-image flex-center">
+                            <img src={imageUrl} alt={itemName} />
+                          </div>
+                          <div className="item-info">
+                            <h4>{itemName}</h4>
+                            <span className="quantity">Quantity: {itemQty}</span>
+                            <span className="price">Price: ₹{Number(itemPrice).toLocaleString('en-IN')}</span>
+                            <div style={{ marginTop: '4px', fontSize: '0.8rem', color: '#007600' }}>
+                              <FaTruck style={{ marginRight: '4px' }} /> Estimated Delivery: {getOrderDeliveryDate(order)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
 
-                  <div className="status-row flex-center" style={{ justifyContent: 'space-between', marginTop: '0.75rem' }}>
-                    <span>Payment Method:</span>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      {order.paymentMethod === 'Razorpay' ? <><FaCreditCard /> Razorpay</> : <><FaMoneyBillWave /> COD</>}
-                    </span>
-                  </div>
+                  {/* Logistics status & cancellation side */}
+                  <div className="order-logistics-wrapper card" style={{ flex: '0 0 280px', height: 'fit-content' }}>
+                    <div className="status-row flex-center" style={{ justifyContent: 'space-between' }}>
+                      <span>Order Status:</span>
+                      <span className={`badge ${order.orderStatus?.toLowerCase() === 'cancelled' ? 'badge-danger' : getStatusBadgeClass(order.isDelivered ? 'delivered' : 'placed')}`}>
+                        {order.isDelivered ? 'Delivered' : (order.orderStatus || 'Placed')}
+                      </span>
+                    </div>
 
-                  <div className="status-row flex-center" style={{ justifyContent: 'space-between', marginTop: '0.75rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
-                    <span>Payment Status:</span>
-                    <span className={`badge ${getStatusBadgeClass(order.paymentStatus)}`}>{order.paymentStatus}</span>
-                  </div>
+                    <div className="status-row flex-center" style={{ justifyContent: 'space-between', marginTop: '0.75rem' }}>
+                      <span>Payment Method:</span>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        {(order.paymentMethod || '').toLowerCase().includes('paytm') ? (
+                          <span style={{ background: '#002e6e', color: '#00baf2', padding: '3px 8px', borderRadius: '4px', fontWeight: 800, fontSize: '0.8rem', letterSpacing: '0.5px' }}>
+                            Paytm UPI
+                          </span>
+                        ) : (order.paymentMethod || '').toLowerCase().includes('card') ? (
+                          <><FaCreditCard style={{ color: '#007185' }} /> Card</>
+                        ) : (
+                          <><FaMoneyBillWave style={{ color: '#007600' }} /> {order.paymentMethod || 'Cash on Delivery'}</>
+                        )}
+                      </span>
+                    </div>
 
-                  {/* Cancel button if order status is placed/packed */}
-                  {['placed', 'packed'].includes(order.orderStatus) && (
-                    <button 
-                      className="btn btn-outline cancel-btn flex-center"
-                      onClick={() => handleCancelOrder(order._id)}
-                      disabled={cancellingId === order._id}
-                      style={{ width: '100%', marginTop: '1.25rem', borderColor: 'var(--error-color)', color: 'var(--error-color)' }}
-                    >
-                      <FaTimes /> {cancellingId === order._id ? 'Cancelling...' : 'Cancel Order'}
-                    </button>
-                  )}
+                    <div className="status-row flex-center" style={{ justifyContent: 'space-between', marginTop: '0.75rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
+                      <span>Payment Status:</span>
+                      <span className={`badge ${order.isPaid || order.paymentStatus === 'Paid' ? 'badge-success' : 'badge-pending'}`}>
+                        {order.paymentStatus || (order.isPaid ? 'Paid' : 'Pending')}
+                      </span>
+                    </div>
+
+                    {/* Track Package Button */}
+                    {order.orderStatus?.toLowerCase() !== 'cancelled' && (
+                      <button 
+                        className="btn btn-primary track-btn flex-center"
+                        onClick={() => setTrackingOrder(order)}
+                        style={{ width: '100%', marginTop: '1rem', gap: '0.4rem', fontWeight: 700 }}
+                      >
+                        <FaRoute /> Track Package
+                      </button>
+                    )}
+
+                    {/* Cancel button for active orders */}
+                    {!order.isDelivered && (order.orderStatus || 'Placed').toLowerCase() !== 'cancelled' && (
+                      <button 
+                        className="btn btn-outline cancel-btn flex-center"
+                        onClick={() => handleCancelOrder(order._id)}
+                        disabled={cancellingId === order._id}
+                        style={{ width: '100%', marginTop: '0.75rem', borderColor: '#cc0c39', color: '#cc0c39', fontWeight: 600 }}
+                      >
+                        <FaTimes /> {cancellingId === order._id ? 'Cancelling...' : 'Cancel Order'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Track Package Modal */}
+      {trackingOrder && (
+        <div 
+          className="tracking-modal-overlay flex-center" 
+          onClick={() => setTrackingOrder(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            zIndex: 9999,
+            padding: '1rem'
+          }}
+        >
+          <div 
+            className="tracking-modal-card animate-fade-in" 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: '8px',
+              width: '100%',
+              maxWidth: '600px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 12px 36px rgba(0,0,0,0.25)'
+            }}
+          >
+            <div className="flex-center" style={{ justifyContent: 'space-between', borderBottom: '1px solid #e7e7e7', padding: '1rem 1.5rem', backgroundColor: '#f6f6f6' }}>
+              <div>
+                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#131921', fontSize: '1.2rem' }}>
+                  <FaTruck style={{ color: '#007185' }} /> Package Tracking
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: '#565959' }}>
+                  Carrier: <strong>{trackingOrder.carrier || 'Amazon Logistics'}</strong> • ID: <strong>{trackingOrder.trackingNumber || `AMZ-IN-${trackingOrder._id.slice(-8).toUpperCase()}`}</strong>
+                </p>
+              </div>
+              <button 
+                onClick={() => setTrackingOrder(null)} 
+                style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#555' }}
+              >
+                <FaTimes />
+              </button>
+            </div>
+
+            <div style={{ padding: '1.5rem' }}>
+              {/* Delivery ETA Callout */}
+              <div style={{ background: '#f0f8ff', border: '1px solid #cce5ff', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem' }}>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#007600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {trackingOrder.isDelivered || trackingOrder.orderStatus === 'Delivered' ? (
+                    <><FaCheckCircle /> Package Delivered</>
+                  ) : (
+                    <><FaTruck /> Estimated Delivery: {getOrderDeliveryDate(trackingOrder)}</>
+                  )}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#333', marginTop: '6px' }}>
+                  Shipping Address: <strong>{trackingOrder.shippingAddress?.fullName}</strong>, {trackingOrder.shippingAddress?.city || 'India'}
+                </div>
+              </div>
+
+              {/* Progress Milestones */}
+              <div className="tracking-milestones-list" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', position: 'relative' }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#007600', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <FaCheckCircle />
+                  </div>
+                  <div>
+                    <strong style={{ display: 'block', fontSize: '0.95rem' }}>Order Placed & Confirmed</strong>
+                    <span style={{ fontSize: '0.83rem', color: '#565959' }}>Payment verified. Transmitted to Amazon Fulfillment Center.</span>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '2px' }}>{new Date(trackingOrder.createdAt).toLocaleString()}</div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: ['Packed', 'Shipped', 'Out for Delivery', 'Delivered'].includes(trackingOrder.orderStatus) ? '#007600' : '#e0e0e0', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <FaBoxOpen />
+                  </div>
+                  <div>
+                    <strong style={{ display: 'block', fontSize: '0.95rem' }}>Packed at Amazon Hub</strong>
+                    <span style={{ fontSize: '0.83rem', color: '#565959' }}>Items sorted, quality checked, and packaged for courier dispatch.</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: ['Shipped', 'Out for Delivery', 'Delivered'].includes(trackingOrder.orderStatus) ? '#007600' : '#e0e0e0', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <FaTruck />
+                  </div>
+                  <div>
+                    <strong style={{ display: 'block', fontSize: '0.95rem' }}>In Transit ({trackingOrder.carrier || 'Amazon Logistics'})</strong>
+                    <span style={{ fontSize: '0.83rem', color: '#565959' }}>Package in transit to local delivery hub near your pincode.</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: ['Out for Delivery', 'Delivered'].includes(trackingOrder.orderStatus) ? '#007600' : '#e0e0e0', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <FaRoute />
+                  </div>
+                  <div>
+                    <strong style={{ display: 'block', fontSize: '0.95rem' }}>Out for Delivery</strong>
+                    <span style={{ fontSize: '0.83rem', color: '#565959' }}>Delivery associate is out for delivery with your package.</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: (trackingOrder.isDelivered || trackingOrder.orderStatus === 'Delivered') ? '#007600' : '#e0e0e0', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <FaCheckCircle />
+                  </div>
+                  <div>
+                    <strong style={{ display: 'block', fontSize: '0.95rem' }}>Delivered</strong>
+                    <span style={{ fontSize: '0.83rem', color: '#565959' }}>Package handed directly to resident at shipping address.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid #e7e7e7', padding: '1rem 1.5rem', textAlign: 'right', background: '#fafafa' }}>
+              <button className="btn btn-primary" onClick={() => setTrackingOrder(null)}>
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -282,6 +282,9 @@ const AdminDashboard = () => {
                           <div className="flex-center" style={{ gap: '0.4rem', justifyContent: 'flex-start' }}>
                             <FaUserShield style={{ color: item.role === 'admin' ? 'var(--error-color)' : (item.role === 'seller' ? 'var(--accent-color)' : 'var(--text-muted)') }} />
                             <select 
+                              id={`admin-role-select-${item._id}`}
+                              name={`userRole_${item._id}`}
+                              aria-label="Change User Role"
                               className="form-control"
                               style={{ width: '130px', padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
                               value={item.role}

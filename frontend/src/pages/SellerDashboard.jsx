@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { FaStore, FaFileInvoiceDollar, FaChartLine, FaBox, FaClock, FaPlus, FaTrash, FaEdit, FaImage, FaUpload, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaStore, FaFileInvoiceDollar, FaChartLine, FaBox, FaClock, FaPlus, FaTrash, FaEdit, FaImage, FaUpload, FaCheck, FaTimes, FaTruck, FaRoute } from 'react-icons/fa';
 
 const SellerDashboard = () => {
   const { user, refreshProfile } = useAuth();
@@ -54,6 +54,10 @@ const SellerDashboard = () => {
 
   // Fetch onboarding status
   const checkOnboardingStatus = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     try {
       const { data } = await api.get('/api/sellers/status');
       setOnboardingStatus(data.status);
@@ -79,15 +83,15 @@ const SellerDashboard = () => {
       ]);
       setAnalytics(analRes.data.analytics);
       
-      // Filter products belonging to this seller profile
-      if (prodRes.data.products && sellerProfile) {
-        const sellerProducts = prodRes.data.products.filter(
-          p => p.seller && p.seller._id === sellerProfile._id
-        );
-        setProducts(sellerProducts);
-      }
-      setOrders(ordRes.data.orders);
-      setCategories(catRes.data.categories);
+      // Handle products, orders, and categories safely
+      const rawProducts = Array.isArray(prodRes.data) ? prodRes.data : (prodRes.data?.products || []);
+      setProducts(rawProducts);
+
+      const rawOrders = Array.isArray(ordRes.data) ? ordRes.data : (ordRes.data?.orders || []);
+      setOrders(rawOrders);
+
+      const rawCategories = Array.isArray(catRes.data) ? catRes.data : (catRes.data?.categories || []);
+      setCategories(rawCategories);
     } catch (err) {
       console.error('Error fetching dashboard metrics', err);
     }
@@ -230,6 +234,47 @@ const SellerDashboard = () => {
 
   if (loading) {
     return <div className="flex-center" style={{ height: '70vh' }}>Loading seller profile...</div>;
+  }
+
+  // --- RENDERING GUEST SELLER LANDING PAGE (WHEN NOT LOGGED IN) ---
+  if (!user) {
+    return (
+      <div className="container animate-fade-in" style={{ padding: '3rem 1rem', maxWidth: '1000px', margin: '0 auto' }}>
+        <div className="card text-center" style={{ padding: '3.5rem 2rem', borderRadius: '8px', background: 'linear-gradient(135deg, #131921 0%, #232f3e 100%)', color: '#fff', marginBottom: '2.5rem' }}>
+          <FaStore style={{ fontSize: '4rem', color: '#febd69', marginBottom: '1.25rem' }} />
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#fff', marginBottom: '1rem' }}>Sell on Amazon.in</h1>
+          <p style={{ fontSize: '1.15rem', color: '#eaeded', maxWidth: '650px', margin: '0 auto 2rem auto', lineHeight: '1.6' }}>
+            Become an Amazon seller and reach hundreds of millions of customers across India. Low selling fees, fast doorstep shipping, and 24/7 seller assistance.
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a href="/login" className="btn btn-primary" style={{ padding: '12px 32px', fontSize: '1.05rem', fontWeight: 700, borderRadius: '24px' }}>
+              Sign In to Start Selling
+            </a>
+            <a href="/register" className="btn btn-outline" style={{ padding: '12px 28px', fontSize: '1.05rem', fontWeight: 700, borderRadius: '24px', borderColor: '#febd69', color: '#febd69' }}>
+              Create Seller Account
+            </a>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+          <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
+            <FaChartLine style={{ fontSize: '2.5rem', color: '#007185', marginBottom: '1rem' }} />
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>Crores of Customers</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.5' }}>Reach genuine buyers from across India searching for your products on Amazon.</p>
+          </div>
+          <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
+            <FaBox style={{ fontSize: '2.5rem', color: '#007600', marginBottom: '1rem' }} />
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>Easy Fulfillment</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.5' }}>Deliver to 100% of serviceable pincodes in India with automated tracking.</p>
+          </div>
+          <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
+            <FaFileInvoiceDollar style={{ fontSize: '2.5rem', color: '#febd69', marginBottom: '1rem' }} />
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>Timely Direct Payouts</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.5' }}>Receive earnings directly into your bank account on scheduled disbursement cycles.</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // --- RENDERING ONBOARDING APPLICATION PORTALS ---
@@ -460,7 +505,7 @@ const SellerDashboard = () => {
             {/* Top Products */}
             <div className="card" style={{ padding: '2rem' }}>
               <h3 style={{ marginBottom: '1.25rem' }}>Top Selling Products</h3>
-              {analytics?.topProducts?.length === 0 ? (
+              {(!analytics?.topProducts || analytics.topProducts.length === 0) ? (
                 <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No sales data available yet.</p>
               ) : (
                 <table className="dashboard-table">
@@ -473,12 +518,12 @@ const SellerDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {analytics?.topProducts?.map((item) => (
+                    {analytics.topProducts.map((item) => (
                       <tr key={item._id}>
                         <td><strong>{item.name}</strong></td>
-                        <td>₹{item.price.toLocaleString('en-IN')}</td>
-                        <td>{item.unitsSold}</td>
-                        <td>₹{item.revenue.toLocaleString('en-IN')}</td>
+                        <td>₹{(item.price || 0).toLocaleString('en-IN')}</td>
+                        <td>{item.unitsSold || 0}</td>
+                        <td>₹{(item.revenue || 0).toLocaleString('en-IN')}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -516,31 +561,35 @@ const SellerDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((prod) => (
-                    <tr key={prod._id}>
-                      <td style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        {prod.images && prod.images.length > 0 ? (
-                          <img src={prod.images[0]} alt="" style={{ width: '40px', height: '40px', objectFit: 'contain', backgroundColor: '#f0f0f0', borderRadius: '4px' }} />
-                        ) : <div style={{ width: '40px', height: '40px', backgroundColor: '#e0e0e0', borderRadius: '4px' }}></div>}
-                        <strong>{prod.name}</strong>
-                      </td>
-                      <td>{prod.brand}</td>
-                      <td>₹{prod.price.toLocaleString('en-IN')}</td>
-                      <td>
-                        <span className={`badge ${prod.stock > 0 ? 'badge-success' : 'badge-danger'}`}>
-                          {prod.stock} left
-                        </span>
-                      </td>
-                      <td>★ {prod.ratings} ({prod.numReviews})</td>
-                      <td>
-                        <div className="flex-center" style={{ gap: '0.5rem', justifyContent: 'flex-start' }}>
-                          <button className="table-action-btn edit" onClick={() => openProductModal(prod)} title="Edit"><FaEdit /></button>
-                          <button className="table-action-btn upload" onClick={() => openUploadModal(prod._id)} title="Upload Images"><FaImage /></button>
-                          <button className="table-action-btn delete" onClick={() => handleDeleteProduct(prod._id)} title="Delete"><FaTrash /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {products.map((prod) => {
+                    const prodImg = (prod.images && prod.images.length > 0) ? prod.images[0] : (prod.image || '');
+                    const prodStock = prod.stock !== undefined ? prod.stock : (prod.countInStock !== undefined ? prod.countInStock : 0);
+                    return (
+                      <tr key={prod._id}>
+                        <td style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          {prodImg ? (
+                            <img src={prodImg} alt="" style={{ width: '40px', height: '40px', objectFit: 'contain', backgroundColor: '#f0f0f0', borderRadius: '4px' }} />
+                          ) : <div style={{ width: '40px', height: '40px', backgroundColor: '#e0e0e0', borderRadius: '4px' }}></div>}
+                          <strong>{prod.name}</strong>
+                        </td>
+                        <td>{prod.brand || 'Amazon Brand'}</td>
+                        <td>₹{Number(prod.price || 0).toLocaleString('en-IN')}</td>
+                        <td>
+                          <span className={`badge ${prodStock > 0 ? 'badge-success' : 'badge-danger'}`}>
+                            {prodStock} left
+                          </span>
+                        </td>
+                        <td>★ {prod.rating || prod.ratings || 4.5} ({prod.numReviews || 0})</td>
+                        <td>
+                          <div className="flex-center" style={{ gap: '0.5rem', justifyContent: 'flex-start' }}>
+                            <button className="table-action-btn edit" onClick={() => openProductModal(prod)} title="Edit"><FaEdit /></button>
+                            <button className="table-action-btn upload" onClick={() => openUploadModal(prod._id)} title="Upload Images"><FaImage /></button>
+                            <button className="table-action-btn delete" onClick={() => handleDeleteProduct(prod._id)} title="Delete"><FaTrash /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}
@@ -556,50 +605,99 @@ const SellerDashboard = () => {
             {orders.length === 0 ? (
               <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No customer orders placed for your items yet.</p>
             ) : (
-              orders.map((ord) => (
-                <div key={ord._id} className="card" style={{ marginBottom: '1.5rem', padding: '1.5rem' }}>
-                  <div className="flex-center" style={{ justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-                    <div>
-                      Order ID: <strong>#{ord._id}</strong>
-                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Buyer: {ord.user?.name} ({ord.user?.email})</p>
-                    </div>
-                    <div>
-                      <select 
-                        className="form-control" 
-                        value={ord.orderStatus}
-                        onChange={(e) => handleOrderStatusUpdate(ord._id, e.target.value)}
-                        style={{ width: '160px' }}
-                        disabled={ord.orderStatus === 'cancelled' || ord.orderStatus === 'delivered'}
-                      >
-                        <option value="placed">Placed</option>
-                        <option value="packed">Packed</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                        {ord.orderStatus === 'cancelled' && <option value="cancelled">Cancelled</option>}
-                      </select>
-                    </div>
-                  </div>
+              orders.map((ord) => {
+                const orderItemsList = ord.orderItems || ord.items || [];
+                const shipping = ord.shippingAddress || {};
+                const shipAddressText = shipping.address 
+                  ? `${shipping.address}, ${shipping.city || ''} - ${shipping.postalCode || ''}`
+                  : `${shipping.street || ''}, ${shipping.city || ''} - ${shipping.zipCode || ''}`;
 
-                  <div className="grid-responsive" style={{ gridTemplateColumns: '1fr 300px', gap: '2rem' }}>
-                    {/* Items */}
-                    <div>
-                      {ord.items.map((item) => (
-                        <div key={item._id} style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem' }}>
-                          <span style={{ fontWeight: 600 }}>{item.product?.name}</span>
-                          <span style={{ color: 'var(--text-muted)' }}>Qty: {item.quantity} x ₹{item.price}</span>
+                const getOrdDeliveryDate = (orderItem) => {
+                  if (orderItem.estimatedDeliveryDate) {
+                    const d = new Date(orderItem.estimatedDeliveryDate);
+                    return `${d.toLocaleDateString('en-IN', { weekday: 'short' })}, ${d.getDate()} ${d.toLocaleDateString('en-IN', { month: 'short' })}`;
+                  }
+                  const created = new Date(orderItem.createdAt || Date.now());
+                  created.setDate(created.getDate() + 3);
+                  return `${created.toLocaleDateString('en-IN', { weekday: 'short' })}, ${created.getDate()} ${created.toLocaleDateString('en-IN', { month: 'short' })}`;
+                };
+
+                return (
+                  <div key={ord._id} className="card" style={{ marginBottom: '1.5rem', padding: '1.5rem' }}>
+                    <div className="flex-center" style={{ justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '1rem', fontWeight: 700 }}>Order #{ord._id}</span>
+                          <span style={{ backgroundColor: '#e6f4ea', color: '#137333', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <FaTruck /> Delivery by: {getOrdDeliveryDate(ord)}
+                          </span>
                         </div>
-                      ))}
+                        <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>
+                          Buyer: <strong>{shipping.fullName || ord.user?.name || 'Amazon Customer'}</strong> {ord.user?.email ? `(${ord.user.email})` : ''} • Tracking: <strong>{ord.trackingNumber || `AMZ-IN-${ord._id.slice(-8).toUpperCase()}`}</strong> ({ord.carrier || 'Amazon Logistics'})
+                        </p>
+                      </div>
+
+                      <div className="flex-center" style={{ gap: '0.75rem' }}>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>Total: ₹{Number(ord.totalPrice || 0).toLocaleString('en-IN')}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <label style={{ fontSize: '0.8rem', color: '#555', fontWeight: 600 }}>Tracking Status:</label>
+                          <select 
+                            id={`order-status-${ord._id}`}
+                            name={`orderStatus_${ord._id}`}
+                            aria-label="Tracking Status"
+                            className="form-control" 
+                            value={ord.orderStatus || 'Placed'}
+                            onChange={(e) => handleOrderStatusUpdate(ord._id, e.target.value)}
+                            style={{ width: '160px', fontWeight: 600 }}
+                            disabled={ord.orderStatus === 'Cancelled' || ord.isDelivered}
+                          >
+                            <option value="Placed">● Placed</option>
+                            <option value="Packed">● Packed</option>
+                            <option value="Shipped">● Shipped</option>
+                            <option value="Out for Delivery">● Out for Delivery</option>
+                            <option value="Delivered">● Delivered</option>
+                            {ord.orderStatus === 'Cancelled' && <option value="Cancelled">Cancelled</option>}
+                          </select>
+                        </div>
+                      </div>
                     </div>
-                    {/* Shipping Address */}
-                    <div style={{ fontSize: '0.85rem' }}>
-                      <strong>Shipping Address:</strong>
-                      <p style={{ marginTop: '0.25rem' }}>
-                        {ord.shippingAddress?.street}, {ord.shippingAddress?.city}, {ord.shippingAddress?.state} - {ord.shippingAddress?.zipCode}
-                      </p>
+
+                    <div className="grid-responsive" style={{ gridTemplateColumns: '1fr 300px', gap: '2rem' }}>
+                      {/* Items */}
+                      <div>
+                        {orderItemsList.length === 0 ? (
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No item details found for this order.</p>
+                        ) : (
+                          orderItemsList.map((item, idx) => {
+                            const itemName = item.name || item.product?.name || 'Amazon Product';
+                            const itemQty = item.qty || item.quantity || 1;
+                            const itemPrice = item.price || 0;
+                            const itemImg = item.image || item.product?.image;
+
+                            return (
+                              <div key={item._id || idx} style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                {itemImg && <img src={itemImg} alt="" style={{ width: '36px', height: '36px', objectFit: 'contain', borderRadius: '4px', backgroundColor: '#f5f5f5' }} />}
+                                <div>
+                                  <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{itemName}</div>
+                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Qty: {itemQty} x ₹{Number(itemPrice).toLocaleString('en-IN')}</span>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                      {/* Shipping Address */}
+                      <div style={{ fontSize: '0.85rem' }}>
+                        <strong>Shipping Address:</strong>
+                        <p style={{ marginTop: '0.25rem', color: '#444' }}>
+                          {shipping.fullName ? <span>{shipping.fullName}<br /></span> : null}
+                          {shipAddressText.trim() ? shipAddressText : 'Standard Delivery, India'}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
@@ -668,8 +766,10 @@ const SellerDashboard = () => {
             
             <form onSubmit={handleUploadSubmit}>
               <div className="form-group">
-                <label className="form-label">Select Image Files (Max 5)</label>
+                <label htmlFor="product-images-upload" className="form-label">Select Image Files (Max 5)</label>
                 <input
+                  id="product-images-upload"
+                  name="productImages"
                   type="file"
                   multiple
                   accept="image/*"

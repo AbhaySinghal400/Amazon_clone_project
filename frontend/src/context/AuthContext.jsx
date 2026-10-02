@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { AuthContext } from './AuthContextValue';
+import { AuthContext, useAuth } from './AuthContextValue';
+
+export { useAuth, AuthContext };
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
@@ -7,40 +9,48 @@ export const AuthProvider = ({ children }) => {
     if (!storedUser) return null;
 
     try {
-      return JSON.parse(storedUser);
+      const parsed = JSON.parse(storedUser);
+      if (!parsed.role) {
+        parsed.role = 'customer';
+      }
+      if (parsed.token) {
+        localStorage.setItem('token', parsed.token);
+      }
+      return parsed;
     } catch (error) {
       console.error('Unable to restore saved user session', error);
       localStorage.removeItem('userInfo');
+      localStorage.removeItem('token');
       return null;
     }
   });
 
-  // 🚀 NEW: Register function added here!
-  const register = async (name, email, password) => {
+  const register = async (name, email, password, role = 'customer') => {
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, role }),
       });
       
       const data = await response.json();
       
       if (response.ok) {
         setUser(data);
-        localStorage.setItem('userInfo', JSON.stringify(data)); // Save token to browser
-        return true; // Registration success
+        localStorage.setItem('userInfo', JSON.stringify(data));
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+        }
+        return { success: true, data };
       } else {
-        alert(data.message || 'Registration failed');
-        return false; // Registration failed
+        return { success: false, message: data.message || 'Registration failed' };
       }
     } catch (error) {
       console.error("Registration error", error);
-      return false;
+      return { success: false, message: 'Server error during registration' };
     }
   };
 
-  // Existing Login function
   const login = async (email, password) => {
     try {
       const response = await fetch('/api/auth/login', {
@@ -53,7 +63,10 @@ export const AuthProvider = ({ children }) => {
       
       if (response.ok) {
         setUser(data);
-        localStorage.setItem('userInfo', JSON.stringify(data)); 
+        localStorage.setItem('userInfo', JSON.stringify(data));
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+        }
         return true; 
       } else {
         alert(data.message || 'Login failed');
@@ -65,15 +78,29 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Existing Logout function
   const logout = () => {
     setUser(null);
     localStorage.removeItem('userInfo');
+    localStorage.removeItem('token');
+  };
+
+  const refreshProfile = async () => {
+    const storedUser = localStorage.getItem('userInfo');
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        setUser(parsed);
+        if (parsed.token) {
+          localStorage.setItem('token', parsed.token);
+        }
+      } catch (error) {
+        console.error('Error refreshing profile:', error);
+      }
+    }
   };
 
   return (
-    // 🚀 Added 'register' to the exported values here!
-    <AuthContext.Provider value={{ user, login, logout, register }}>
+    <AuthContext.Provider value={{ user, login, logout, register, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

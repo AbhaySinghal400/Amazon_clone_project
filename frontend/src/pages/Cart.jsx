@@ -25,8 +25,8 @@ const Cart = () => {
           {cartItems.length === 0 ? (
             <p>Your Amazon Cart is empty. <Link to="/">Go shopping</Link></p>
           ) : (
-            cartItems.map((item) => (
-              <div key={item.product} className="amz-cart-item">
+            cartItems.map((item, index) => (
+              <div key={item.product || `cart-item-${index}`} className="amz-cart-item">
                 <img src={item.image || 'https://via.placeholder.com/150'} alt={item.name} />
                 
                 <div className="amz-cart-item-details">
@@ -38,6 +38,9 @@ const Cart = () => {
                   
                   <div className="amz-cart-actions">
                     <select 
+                      id={`cart-qty-${item.product}`}
+                      name={`cartQty_${item.product}`}
+                      aria-label="Select quantity"
                       value={item.qty} 
                       onChange={(e) => updateQuantity(item.product, e.target.value)}
                       className="amz-qty-dropdown"
@@ -59,14 +62,14 @@ const Cart = () => {
                 </div>
                 
                 <div className="amz-cart-item-price">
-                  <strong>${item.price}</strong>
+                  <strong>₹{Number(item.price).toLocaleString('en-IN')}</strong>
                 </div>
               </div>
             ))
           )}
           {cartItems.length > 0 && (
              <div className="amz-cart-subtotal-bottom">
-               Subtotal ({getCartCount()} items): <strong>${getCartTotal()}</strong>
+               Subtotal ({getCartCount()} items): <strong>₹{Number(getCartTotal()).toLocaleString('en-IN')}</strong>
              </div>
           )}
         </div>
@@ -79,7 +82,7 @@ const Cart = () => {
                 ✅ Your order is eligible for FREE Delivery.
               </p>
               <h3>
-                Subtotal ({getCartCount()} items): <strong>${getCartTotal()}</strong>
+                Subtotal ({getCartCount()} items): <strong>₹{Number(getCartTotal()).toLocaleString('en-IN')}</strong>
               </h3>
               <button 
                 className="amz-proceed-btn"

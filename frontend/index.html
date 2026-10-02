@@ -4,7 +4,52 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>Amazon.in - Online Shopping site in India</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+      // Clean console from third-party extension message port errors
+      (function() {
+        const _origConsoleError = console.error;
+        const _origConsoleInfo = console.info;
+        const _origConsoleLog = console.log;
+
+        const isExtensionNoise = (msg) => {
+          if (!msg) return false;
+          const str = String(msg);
+          return (
+            str.includes('message port closed') ||
+            str.includes('runtime.lastError') ||
+            str.includes('React DevTools')
+          );
+        };
+
+        console.error = function(...args) {
+          if (args.some(isExtensionNoise)) return;
+          _origConsoleError.apply(console, args);
+        };
+
+        console.info = function(...args) {
+          if (args.some(isExtensionNoise)) return;
+          _origConsoleInfo.apply(console, args);
+        };
+
+        window.addEventListener('error', function(e) {
+          if (e && isExtensionNoise(e.message)) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+          }
+        }, true);
+
+        window.addEventListener('unhandledrejection', function(e) {
+          if (e && e.reason && isExtensionNoise(e.reason.message || e.reason)) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+          }
+        }, true);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

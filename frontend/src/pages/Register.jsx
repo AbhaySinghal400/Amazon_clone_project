@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContextValue';
+import AmazonLogo from '../components/AmazonLogo';
 
 const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('customer'); // Default to customer
+  const [role, setRole] = useState('customer');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -42,92 +43,106 @@ const Register = () => {
       setPassword('');
       setRole('customer');
     } else {
-      setError(result.message);
+      setError(result.message || 'Registration failed. Please try again.');
     }
     setSubmitting(false);
   };
 
   return (
-    <div className="login-container flex-center animate-fade-in" style={{ minHeight: '90vh' }}>
-      <div className="login-logo-wrapper">
-        <Link to="/" className="login-logo">
-          amazon<span>marketplace</span>
-        </Link>
+    <div className="amz-login-wrapper" style={{ minHeight: '85vh', paddingBottom: '3rem' }}>
+      <div style={{ marginBottom: '1rem' }}>
+        <AmazonLogo variant="dark" size="large" />
       </div>
-
-      <div className="card login-card" style={{ maxWidth: '420px' }}>
-        <h2>Create account</h2>
+      
+      <div className="amz-login-container" style={{ width: '380px' }}>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '1.25rem' }}>Create account</h1>
         
-        {error && <div className="alert alert-danger">{error}</div>}
-        {success && <div className="alert alert-success">{success}</div>}
+        {error && <div className="alert alert-danger" style={{ marginBottom: '1rem', padding: '10px', background: '#fdf2f2', color: '#b91c1c', borderRadius: '4px', fontSize: '0.85rem' }}>{error}</div>}
+        {success && <div className="alert alert-success" style={{ marginBottom: '1rem', padding: '10px', background: '#f0fdf4', color: '#15803d', borderRadius: '4px', fontSize: '0.85rem' }}>{success}</div>}
 
-        <form onSubmit={handleSubmit} style={{ marginTop: '1.25rem' }}>
-          <div className="form-group">
-            <label className="form-label" htmlFor="register-name">Your name</label>
+        <form onSubmit={handleSubmit}>
+          <div className="amz-input-group">
+            <label htmlFor="reg-name">Your name</label>
             <input
-              id="register-name"
+              id="reg-name"
+              name="name"
               type="text"
-              className="form-control"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="First and last name"
+              autoComplete="name"
               required
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="register-email">Email address</label>
+          <div className="amz-input-group">
+            <label htmlFor="reg-email">Email address</label>
             <input
-              id="register-email"
+              id="reg-email"
+              name="email"
               type="email"
-              className="form-control"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@example.com"
+              autoComplete="email"
               required
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="register-password">Password</label>
+          <div className="amz-input-group">
+            <label htmlFor="reg-password">Password</label>
             <input
-              id="register-password"
+              id="reg-password"
+              name="password"
               type="password"
-              className="form-control"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="At least 6 characters"
+              autoComplete="new-password"
               required
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="register-role">Account Type</label>
+          <div className="amz-input-group">
+            <label htmlFor="reg-role">Account Type</label>
             <select
-              id="register-role"
-              className="form-control"
+              id="reg-role"
+              name="role"
+              className="amz-select"
               value={role}
               onChange={(e) => setRole(e.target.value)}
+              style={{
+                width: '100%',
+                height: '35px',
+                borderRadius: '3px',
+                border: '1px solid #a6a6a6',
+                padding: '0 8px',
+                fontSize: '0.9rem',
+                backgroundColor: '#f7f7f7'
+              }}
             >
               <option value="customer">Customer (Buy Products)</option>
-              <option value="seller">Seller (List Business & Sell Products)</option>
+              <option value="seller">Seller (Sell Products & Business)</option>
             </select>
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }} disabled={submitting}>
-            {submitting ? 'Creating account...' : 'Create Account'}
+          <button 
+            type="submit" 
+            className="amz-login-signInButton" 
+            style={{ fontWeight: 600, marginTop: '1rem' }} 
+            disabled={submitting}
+          >
+            {submitting ? 'Creating account...' : 'Create your Amazon account'}
           </button>
         </form>
 
-        <p className="login-terms">
-          By creating an account, you agree to Amazon Clone's Conditions of Use & Sale.
+        <p className="amz-login-terms" style={{ fontSize: '0.75rem', marginTop: '1rem', color: '#555' }}>
+          By creating an account, you agree to Amazon Clone's <a href="#" style={{ color: '#0066c0' }}>Conditions of Use & Sale</a> and <a href="#" style={{ color: '#0066c0' }}>Privacy Notice</a>.
         </p>
 
-        <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '1.5rem 0 1rem 0' }} />
-
-        <p style={{ fontSize: '0.85rem', textAlign: 'center' }}>
-          Already have an account? <Link to="/login" style={{ color: '#0066c0', fontWeight: 500 }}>Sign in</Link>
-        </p>
+        <div style={{ borderTop: '1px solid #e7e7e7', marginTop: '1.5rem', paddingTop: '1rem', textAlign: 'center', fontSize: '0.85rem' }}>
+          Already have an account? <Link to="/login" style={{ color: '#0066c0', fontWeight: 600 }}>Sign in</Link>
+        </div>
       </div>
     </div>
   );

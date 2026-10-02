@@ -1,136 +1,168 @@
+import AmazonLogo from './AmazonLogo';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="footer">
-      <div className="back-to-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+    <footer className="amz-footer">
+      {/* Back to top button */}
+      <div 
+        className="amz-back-to-top" 
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      >
         Back to top
       </div>
       
-      <div className="container footer-content">
-        <div className="footer-column">
-          <h3>Get to Know Us</h3>
-          <ul>
-            <li>Careers</li>
-            <li>Blog</li>
-            <li>About Amazon</li>
-            <li>Investor Relations</li>
-          </ul>
-        </div>
-        <div className="footer-column">
-          <h3>Make Money with Us</h3>
-          <ul>
-            <li>Sell products on Amazon</li>
-            <li>Sell on Amazon Business</li>
-            <li>Become an Affiliate</li>
-            <li>Advertise Your Products</li>
-          </ul>
-        </div>
-        <div className="footer-column">
-          <h3>Amazon Payment Products</h3>
-          <ul>
-            <li>Amazon Business Card</li>
-            <li>Shop with Points</li>
-            <li>Reload Your Balance</li>
-            <li>Amazon Currency Converter</li>
-          </ul>
-        </div>
-        <div className="footer-column">
-          <h3>Let Us Help You</h3>
-          <ul>
-            <li>Amazon and COVID-19</li>
-            <li>Your Account</li>
-            <li>Your Orders</li>
-            <li>Shipping Rates & Policies</li>
-          </ul>
+      {/* Footer Nav Links */}
+      <div className="amz-footer-main">
+        <div className="container amz-footer-links-grid">
+          
+          <div className="amz-footer-col">
+            <h3>Get to Know Us</h3>
+            <ul>
+              <li><a href="#">About Amazon Marketplace</a></li>
+              <li><a href="#">Careers</a></li>
+              <li><a href="#">Press Releases</a></li>
+              <li><a href="#">Amazon Science</a></li>
+            </ul>
+          </div>
+
+          <div className="amz-footer-col">
+            <h3>Connect with Us</h3>
+            <ul>
+              <li><a href="#">Facebook</a></li>
+              <li><a href="#">Twitter</a></li>
+              <li><a href="#">Instagram</a></li>
+            </ul>
+          </div>
+
+          <div className="amz-footer-col">
+            <h3>Make Money with Us</h3>
+            <ul>
+              <li><a href="/seller">Sell on Amazon</a></li>
+              <li><a href="/seller">Sell under Amazon Accelerator</a></li>
+              <li><a href="#">Protect and Build Your Brand</a></li>
+              <li><a href="#">Amazon Global Selling</a></li>
+              <li><a href="#">Become an Affiliate</a></li>
+              <li><a href="#">Fulfillment by Amazon</a></li>
+            </ul>
+          </div>
+
+          <div className="amz-footer-col">
+            <h3>Let Us Help You</h3>
+            <ul>
+              <li><a href="#">Your Account</a></li>
+              <li><a href="/orders">Returns Centre</a></li>
+              <li><a href="#">100% Purchase Protection</a></li>
+              <li><a href="#">Amazon App Download</a></li>
+              <li><a href="#">Help & Support</a></li>
+            </ul>
+          </div>
+
         </div>
       </div>
       
-      <div className="footer-bottom">
-        <div className="container bottom-container">
-          <span className="footer-logo">amazon<span>marketplace</span></span>
-          <p>© {currentYear} Amazon Marketplace Clone. All rights reserved. Developed by Antigravity AI.</p>
+      {/* Bottom Legal Section */}
+      <div className="amz-footer-bottom">
+        <div className="container amz-bottom-content">
+          <AmazonLogo variant="light" size="medium" />
+          <p>© 1996-{currentYear}, Amazon.in, Inc. or its affiliates. Amazon Marketplace Clone built with React & Node.js</p>
         </div>
       </div>
 
       <style>{`
-        .footer {
-          background-color: var(--secondary-color);
+        .amz-footer {
+          background-color: #232f3e;
           color: #ffffff;
-          margin-top: 5rem;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
-        .back-to-top {
+        .amz-back-to-top {
           background-color: #37475a;
           text-align: center;
-          padding: 1rem 0;
+          padding: 15px 0;
           font-size: 0.85rem;
-          font-weight: 500;
+          font-weight: 600;
           cursor: pointer;
-          transition: var(--transition-smooth);
+          color: white;
+          transition: background-color 0.2s;
         }
 
-        .back-to-top:hover {
+        .amz-back-to-top:hover {
           background-color: #485769;
         }
 
-        .footer-content {
+        .amz-footer-main {
+          padding: 40px 0;
+          border-bottom: 1px solid #3a4553;
+        }
+
+        .amz-footer-links-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 3rem;
-          padding: 4rem 2rem;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 30px;
         }
 
-        .footer-column h3 {
-          font-size: 1rem;
+        .amz-footer-col h3 {
+          font-size: 0.95rem;
           font-weight: 700;
-          margin-bottom: 1.25rem;
           color: #ffffff;
+          margin-bottom: 14px;
         }
 
-        .footer-column ul {
+        .amz-footer-col ul {
           list-style: none;
+          padding: 0;
+          margin: 0;
         }
 
-        .footer-column ul li {
-          font-size: 0.85rem;
+        .amz-footer-col ul li {
+          margin-bottom: 8px;
+        }
+
+        .amz-footer-col ul li a {
           color: #dddddd;
-          margin-bottom: 0.75rem;
-          cursor: pointer;
-          transition: var(--transition-smooth);
+          text-decoration: none;
+          font-size: 0.82rem;
+          transition: color 0.15s;
         }
 
-        .footer-column ul li:hover {
-          color: var(--accent-color);
+        .amz-footer-col ul li a:hover {
+          color: #ffffff;
           text-decoration: underline;
         }
 
-        .footer-bottom {
-          background-color: var(--primary-color);
-          border-top: 1px solid #3a4553;
-          padding: 2.5rem 0;
+        .amz-footer-bottom {
+          background-color: #131921;
+          padding: 30px 0;
           text-align: center;
-          font-size: 0.8rem;
-          color: #cccccc;
         }
 
-        .bottom-container {
+        .amz-bottom-content {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 1rem;
+          gap: 12px;
         }
 
-        .footer-logo {
-          font-family: 'Playfair Display', serif;
+        .amz-footer-brand {
+          display: flex;
+          align-items: baseline;
+          font-family: 'Outfit', sans-serif;
+          font-weight: 800;
           font-size: 1.5rem;
-          font-weight: 700;
-          color: #ffffff;
+          color: white;
         }
 
-        .footer-logo span {
-          color: var(--accent-color);
+        .amz-brand-sub {
+          color: #febd69;
+          font-size: 0.9rem;
+          font-weight: 700;
+        }
+
+        .amz-bottom-content p {
+          font-size: 0.75rem;
+          color: #999999;
         }
       `}</style>
     </footer>

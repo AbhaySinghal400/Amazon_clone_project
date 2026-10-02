@@ -24,7 +24,8 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   // If role checking is needed, check user role matches allowed roles
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
+  const userRole = user?.role || 'customer';
+  if (allowedRoles && !allowedRoles.includes(userRole)) {
     return <Navigate to="/" replace />; // Forbidden page redirect
   }
 

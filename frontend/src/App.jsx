@@ -2,11 +2,13 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // Context Providers
 import { AuthProvider } from './context/AuthContext';
+import { LocationProvider } from './context/LocationContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 
 // Components
 import Navbar from './components/Navbar';
+import LocationModal from './components/LocationModal';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -27,11 +29,13 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <CartProvider>
-          <WishlistProvider>
-            
-            <div className="app-wrapper flex-center" style={{ flexDirection: 'column', minHeight: '100vh', justifyContent: 'flex-start', alignItems: 'stretch' }}>
-              <Navbar />
+        <LocationProvider>
+          <CartProvider>
+            <WishlistProvider>
+              
+              <div className="app-wrapper flex-center" style={{ flexDirection: 'column', minHeight: '100vh', justifyContent: 'flex-start', alignItems: 'stretch' }}>
+                <Navbar />
+                <LocationModal />
               
               <div className="main-content" style={{ flexGrow: 1 }}>
                 <Routes>
@@ -64,12 +68,8 @@ function App() {
                     </ProtectedRoute>
                   } />
 
-                  {/* Private Seller Routes */}
-                  <Route path="/seller" element={
-                    <ProtectedRoute allowedRoles={['customer', 'seller']}>
-                      <SellerDashboard />
-                    </ProtectedRoute>
-                  } />
+                  {/* Seller Hub & Dashboard Route */}
+                  <Route path="/seller" element={<SellerDashboard />} />
 
                   {/* Private Admin Routes */}
                   <Route path="/admin" element={
@@ -94,6 +94,7 @@ function App() {
 
           </WishlistProvider>
         </CartProvider>
+        </LocationProvider>
       </AuthProvider>
     </Router>
   );

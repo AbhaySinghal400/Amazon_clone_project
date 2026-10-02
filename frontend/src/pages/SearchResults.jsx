@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { useCart } from '../context/CartContextValue';
+import api from '../utils/api';
+import ProductCard from '../components/ProductCard';
 
 const SearchResults = () => {
   const [products, setProducts] = useState([]);
@@ -10,104 +11,244 @@ const SearchResults = () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const categoryQuery = searchParams.get('category') || 'All';
-  const { addToCart } = useCart();
+  const keywordQuery = searchParams.get('keyword') || '';
 
   useEffect(() => {
     const fetchSearchResults = async () => {
       setLoading(true);
+      setError('');
       try {
-        const url = categoryQuery !== 'All' 
-          ? `/api/products?category=${categoryQuery}` 
-          : `/api/products`;
-          
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        if (response.ok) {
-          setProducts(Array.isArray(data) ? data : []); 
-        } else {
-          setError(data.message || 'Failed to fetch products');
+        let endpoint = '/api/products';
+        const params = new URLSearchParams();
+
+        if (categoryQuery !== 'All') {
+          params.append('category', categoryQuery);
         }
-      } catch {
-        setError('Server error while searching');
+        if (keywordQuery) {
+          params.append('keyword', keywordQuery);
+        }
+
+        if (params.toString()) {
+          endpoint += `?${params.toString()}`;
+        }
+          
+        const response = await api.get(endpoint);
+        const data = response.data;
+        
+        const results = Array.isArray(data) ? data : (data.products || []);
+        
+        // Filter locally by keyword if backend doesn't filter by keyword
+        const filtered = keywordQuery
+          ? results.filter(p => p.name.toLowerCase().includes(keywordQuery.toLowerCase()) || (p.brand && p.brand.toLowerCase().includes(keywordQuery.toLowerCase())))
+          : results;
+
+        setProducts(filtered);
+      } catch (err) {
+        console.error(err);
+        setError('Unable to fetch search results.');
       } finally {
         setLoading(false);
       }
     };
 
     fetchSearchResults();
-  }, [categoryQuery]);
+  }, [categoryQuery, keywordQuery]);
 
   return (
-    <div className="amz-search-page">
-      {/* Left Sidebar Filters */}
-      <div className="amz-search-sidebar">
-        <h4>Eligible for Free Delivery</h4>
-        <label><input type="checkbox" /> Free Shipping</label>
+    <div className="amz-search-page-wrapper">
+      <div className="container amz-search-container">
         
-        <h4>Brand</h4>
-        <ul className="amz-sidebar-list">
-          <li><a href="#">Apple</a></li>
-          <li><a href="#">Samsung</a></li>
-          <li><a href="#">Sony</a></li>
-        </ul>
+        {/* Top Header Result summary */}
+        <div className="amz-search-top-bar">
+          <p>
+            Showing results for {keywordQuery ? <strong>"{keywordQuery}"</strong> : <strong>"{categoryQuery}"</strong>}
+          </p>
+        </div>
 
-        <h4>Price</h4>
-        <ul className="amz-sidebar-list">
-          <li><a href="#">Under $50</a></li>
-          <li><a href="#">$50 to $100</a></li>
-          <li><a href="#">$100 to $200</a></li>
-          <li><a href="#">Over $200</a></li>
-        </ul>
-      </div>
+        <div className="amz-search-layout">
+          {/* Left Sidebar Filters */}
+          <aside className="amz-search-sidebar">
+            <h3>Department</h3>
+            <ul className="amz-filter-list">
+              <li><Link to="/search">All Departments</Link></li>
+              <li><Link to="/search?category=Electronics">Electronics</Link></li>
+              <li><Link to="/search?category=Fashion">Fashion</Link></li>
+              <li><Link to="/search?category=Home%20%26%20Kitchen">Home & Kitchen</Link></li>
+              <li><Link to="/search?category=Beauty">Beauty & Personal Care</Link></li>
+            </ul>
 
-      {/* Right Content Area */}
-      <div className="amz-search-content">
-        <h2>Results</h2>
-        <p className="amz-search-subtitle">Check each product page for other buying options.</p>
+            <hr />
 
-        {loading ? (
-          <h2>Loading...</h2>
-        ) : error ? (
-          <h2 style={{ color: 'red' }}>{error}</h2>
-        ) : products?.length === 0 ? (
-          <h2>No products found.</h2>
-        ) : (
-          <div className="amz-search-list">
-            {products?.map((product) => (
-              <div key={product._id} className="amz-search-item">
-                <div className="amz-search-item-img">
-                  <Link to={`/product/${product._id}`}>
-                    <img src={product.image} alt={product.name} />
-                  </Link>
-                </div>
-                <div className="amz-search-item-details">
-                  <Link to={`/product/${product._id}`} className="amz-item-title">
-                    {product.name}
-                  </Link>
-                  <div className="amz-item-rating">
-                    ⭐⭐⭐⭐⭐ {product.rating} ({product.numReviews})
-                  </div>
-                  <div className="amz-item-price">
-                    <sup>$</sup>
-                    <span className="amz-price-whole">{Math.floor(product.price)}</span>
-                    <span className="amz-price-fraction">
-                      {(product.price % 1).toFixed(2).substring(2)}
-                    </span>
-                  </div>
-                  <p className="amz-item-shipping">FREE delivery</p>
-                  <button 
-                    className="amz-add-to-cart-btn"
-                    onClick={() => addToCart(product)}
-                  >
-                    Add to cart
-                  </button>
-                </div>
+            <h3>Customer Reviews</h3>
+            <ul className="amz-filter-list">
+              <li><a href="#">⭐⭐⭐⭐ & Up</a></li>
+              <li><a href="#">⭐⭐⭐ & Up</a></li>
+            </ul>
+
+            <hr />
+
+            <h3>Delivery Day</h3>
+            <label className="amz-checkbox-label" htmlFor="delivery-tomorrow-filter">
+              <input 
+                id="delivery-tomorrow-filter" 
+                name="deliveryTomorrow" 
+                type="checkbox" 
+                defaultChecked 
+              /> Get It by Tomorrow
+            </label>
+          </aside>
+
+          {/* Right Main Content */}
+          <main className="amz-search-main">
+            <h2>Results</h2>
+            <p className="amz-search-disclaimer">Price and other details may vary based on product size and colour.</p>
+
+            {loading ? (
+              <div className="amz-search-loading flex-center">
+                <div className="amz-spinner"></div>
+                <p>Searching products...</p>
               </div>
-            ))}
-          </div>
-        )}
+            ) : error ? (
+              <div className="alert alert-danger">{error}</div>
+            ) : products?.length === 0 ? (
+              <div className="amz-empty-results">
+                <h3>No products found</h3>
+                <p>Try checking your spelling or use more general terms.</p>
+                <Link to="/" className="btn btn-primary" style={{ marginTop: '1rem', display: 'inline-block' }}>Return to Homepage</Link>
+              </div>
+            ) : (
+              <div className="amz-search-grid">
+                {products?.map((product) => (
+                  <ProductCard key={product._id} product={product} />
+                ))}
+              </div>
+            )}
+          </main>
+        </div>
+
       </div>
+
+      <style>{`
+        .amz-search-page-wrapper {
+          background-color: #eaeded;
+          min-height: 90vh;
+          padding: 1.5rem 0 3rem 0;
+          font-family: 'Inter', sans-serif;
+        }
+
+        .amz-search-top-bar {
+          background: white;
+          padding: 12px 20px;
+          border-radius: 6px;
+          margin-bottom: 1.5rem;
+          border: 1px solid #e7e7e7;
+          font-size: 0.95rem;
+          color: #333;
+        }
+
+        .amz-search-layout {
+          display: grid;
+          grid-template-columns: 220px 1fr;
+          gap: 24px;
+        }
+
+        .amz-search-sidebar {
+          background: white;
+          padding: 20px;
+          border-radius: 6px;
+          border: 1px solid #e7e7e7;
+          height: fit-content;
+        }
+
+        .amz-search-sidebar h3 {
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: #0f1111;
+          margin-bottom: 10px;
+        }
+
+        .amz-search-sidebar hr {
+          border: none;
+          border-top: 1px solid #e7e7e7;
+          margin: 16px 0;
+        }
+
+        .amz-filter-list {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+
+        .amz-filter-list li {
+          margin-bottom: 6px;
+        }
+
+        .amz-filter-list a {
+          color: #007185;
+          text-decoration: none;
+          font-size: 0.85rem;
+        }
+
+        .amz-filter-list a:hover {
+          color: #c7511f;
+          text-decoration: underline;
+        }
+
+        .amz-checkbox-label {
+          font-size: 0.85rem;
+          color: #333;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          cursor: pointer;
+        }
+
+        .amz-search-main {
+          background: white;
+          padding: 24px;
+          border-radius: 6px;
+          border: 1px solid #e7e7e7;
+        }
+
+        .amz-search-main h2 {
+          font-size: 1.3rem;
+          font-weight: 700;
+          color: #0f1111;
+          margin-bottom: 4px;
+        }
+
+        .amz-search-disclaimer {
+          font-size: 0.8rem;
+          color: #565959;
+          margin-bottom: 20px;
+        }
+
+        .amz-search-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: 20px;
+        }
+
+        .amz-empty-results {
+          text-align: center;
+          padding: 3rem 1rem;
+        }
+
+        .amz-search-loading {
+          flex-direction: column;
+          padding: 3rem 0;
+        }
+
+        @media (max-width: 768px) {
+          .amz-search-layout {
+            grid-template-columns: 1fr;
+          }
+
+          .amz-search-sidebar {
+            display: none;
+          }
+        }
+      `}</style>
     </div>
   );
 };
